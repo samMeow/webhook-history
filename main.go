@@ -17,11 +17,33 @@ func init() {
 	}
 }
 
+// DummyResponse just dummy yes
 type DummyResponse struct {
 	Success bool
 }
 
-func handler(c *gin.Context) {
+type MainRouter struct {
+	DB Storage
+}
+
+func (m MainRouter) QueryHandler(c *gin.Context) {
+	m.DB.Add(
+		c.Request.Host,
+		c.Request.URL.Query(),
+	)
+	res := &DummyResponse{
+		Success: true,
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (m MainRouter) GetHistoryHandler(c *gin.Context) {
+	history := m.DB.GetAll()
+	c.JSON(http.StatusOK, history)
+}
+
+func (m MainRouter) ClearHandler(c *gin.Context) {
+	m.DB.Clear()
 	res := &DummyResponse{
 		Success: true,
 	}
@@ -29,8 +51,16 @@ func handler(c *gin.Context) {
 }
 
 func main() {
+	store := []RequestHistory{}
+	mainRoute := &MainRouter{
+		DB: &StorageImpl{
+			Store: store,
+		},
+	}
 	router := gin.Default()
 	router.Use(gin.Logger())
-	router.GET("/", handler)
+	router.GET("/", mainRoute.QueryHandler)
+	router.GET("/history", mainRoute.GetHistoryHandler)
+	router.DELETE("/", mainRoute.ClearHandler)
 	router.Run(":" + port)
 }
