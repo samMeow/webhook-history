@@ -8,12 +8,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const defaultPort string = "8080"
+
 var port string
 
 func init() {
 	port = os.Getenv("PORT")
 	if port == "" {
-		log.Panic("$PORT must be set")
+		port = defaultPort
+		log.Printf("$PORT must be set fallback to defaultport %s\n", defaultPort)
 	}
 }
 
@@ -23,11 +26,11 @@ type DummyResponse struct {
 }
 
 type MainRouter struct {
-	DB Storage
+	RequestRepository Storage
 }
 
 func (m MainRouter) QueryHandler(c *gin.Context) {
-	m.DB.Add(
+	m.RequestRepository.Add(
 		c.Request.Host,
 		c.Request.URL.Query(),
 	)
@@ -38,29 +41,36 @@ func (m MainRouter) QueryHandler(c *gin.Context) {
 }
 
 func (m MainRouter) GetHistoryHandler(c *gin.Context) {
-	history := m.DB.GetAll()
+	history := m.RequestRepository.GetAll()
 	c.JSON(http.StatusOK, history)
 }
 
 func (m MainRouter) ClearHandler(c *gin.Context) {
-	m.DB.Clear()
+	m.RequestRepository.Clear()
 	res := &DummyResponse{
 		Success: true,
 	}
 	c.JSON(http.StatusOK, res)
 }
 
-func main() {
-	store := []RequestHistory{}
+func NewMainRouter(re Storage) *gin.Engine {
+
 	mainRoute := &MainRouter{
-		DB: &StorageImpl{
-			Store: store,
-		},
+		RequestRepository: re,
 	}
 	router := gin.Default()
-	router.Use(gin.Logger())
 	router.GET("/", mainRoute.QueryHandler)
 	router.GET("/history", mainRoute.GetHistoryHandler)
 	router.DELETE("/", mainRoute.ClearHandler)
+	return router
+}
+
+func main() {
+	store := []RequestHistory{}
+	repo := &StorageImpl{
+		Store: store,
+	}
+	router := NewMainRouter(repo)
+	router.Use(gin.Logger())
 	router.Run(":" + port)
 }
