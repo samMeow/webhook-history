@@ -40,6 +40,14 @@ func (m MainRouter) QueryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (m MainRouter) BodyHandler(c *gin.Context) {
+
+	res := &DummyResponse{
+		Success: true,
+	}
+	c.JSON(http.StatusOK, res)
+}
+
 func (m MainRouter) GetHistoryHandler(c *gin.Context) {
 	history := m.RequestRepository.GetAll()
 	c.JSON(http.StatusOK, history)
