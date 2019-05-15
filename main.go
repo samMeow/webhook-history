@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -30,9 +32,15 @@ type MainRouter struct {
 }
 
 func (m MainRouter) QueryHandler(c *gin.Context) {
+	params, err := json.Marshal(c.Request.URL.Query())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+	}
+
 	m.RequestRepository.Add(
+		"GET",
 		c.Request.Host,
-		c.Request.URL.Query(),
+		string(params),
 	)
 	res := &DummyResponse{
 		Success: true,
@@ -41,6 +49,18 @@ func (m MainRouter) QueryHandler(c *gin.Context) {
 }
 
 func (m MainRouter) BodyHandler(c *gin.Context) {
+	buf := bytes.Buffer{}
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	m.RequestRepository.Add(
+		"POST",
+		c.Request.Host,
+		buf.String(),
+	)
 
 	res := &DummyResponse{
 		Success: true,
@@ -62,12 +82,12 @@ func (m MainRouter) ClearHandler(c *gin.Context) {
 }
 
 func NewMainRouter(re Storage) *gin.Engine {
-
 	mainRoute := &MainRouter{
 		RequestRepository: re,
 	}
 	router := gin.Default()
 	router.GET("/", mainRoute.QueryHandler)
+	router.POST("/", mainRoute.BodyHandler)
 	router.GET("/history", mainRoute.GetHistoryHandler)
 	router.DELETE("/", mainRoute.ClearHandler)
 	return router

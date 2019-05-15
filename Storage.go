@@ -3,12 +3,13 @@ package main
 const StorageSize int = 20
 
 type RequestHistory struct {
-	From string
-	Data map[string][]string
+	Method string
+	From   string
+	Data   string
 }
 
 type Storage interface {
-	Add(from string, data map[string][]string)
+	Add(method string, from string, data string)
 	Clear()
 	GetAll() []RequestHistory
 }
@@ -18,10 +19,11 @@ type StorageImpl struct {
 }
 
 // Add data to storage
-func (s *StorageImpl) Add(from string, data map[string][]string) {
+func (s *StorageImpl) Add(method string, from string, data string) {
 	datum := RequestHistory{
-		From: from,
-		Data: data,
+		Method: method,
+		From:   from,
+		Data:   data,
 	}
 	if len(s.Store) > StorageSize {
 		s.Clear()

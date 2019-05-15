@@ -32,7 +32,5 @@ func TestMainRouteShouldAddQueryStringToRepositroy(t *testing.T) {
 	value := response[0].Data
 	assert.Nil(t, err)
 
-	j, _ := json.Marshal(value)
-	assert.Equal(t, "{\"hello\":[\"world\"]}", string(j[:]))
-
+	assert.Equal(t, "{\"hello\":[\"world\"]}", value)
 }
